@@ -9,7 +9,7 @@ import {
 import type { MetaFunction } from "remix";
 
 export const meta: MetaFunction = () => {
-  return { title: "New Remix App" };
+  return { title: "Remix: So great, it's funny!" };
 };
 
 export default function App() {
