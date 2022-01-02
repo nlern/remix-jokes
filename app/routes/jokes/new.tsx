@@ -1,60 +1,65 @@
 import {
   ActionFunction,
   Form,
+  json,
   redirect,
   useActionData,
   useTransition,
 } from "remix";
-import { z } from "zod";
 import { db } from "~/utils/db.server";
 
-const stringSchema = z.string();
+function validateJokeName(name: string) {
+  if (name.length < 2) {
+    return "That joke's name is too short";
+  }
+}
 
-type PostError = {
-  name?: boolean;
-  content?: boolean;
+function validateJokeContent(content: string) {
+  if (content.length < 10) {
+    return "That joke is too short";
+  }
+}
+
+type ActionData = {
+  formError?: string;
+  fieldErrors?: {
+    name: string | undefined;
+    content: string | undefined;
+  };
+  fields?: {
+    name: string;
+    content: string;
+  };
 };
 
+const badRequest = (data: ActionData) => json(data, { status: 400 });
+
 export const action: ActionFunction = async ({ request }) => {
-  const body = await request.formData();
+  const form = await request.formData();
+  const name = form.get("name");
+  const content = form.get("content");
 
-  let errors: PostError = {};
-
-  let name: string = "";
-  let content: string = "";
-
-  try {
-    name = stringSchema.parse(body.get("name"));
-  } catch (error) {
-    errors.name = true;
+  if (typeof name !== "string" || typeof content !== "string") {
+    return badRequest({
+      formError: "Form not submitted correctly",
+    });
   }
 
-  try {
-    content = stringSchema.parse(body.get("content"));
-  } catch (error) {
-    errors.content = true;
+  const fieldErrors = {
+    name: validateJokeName(name),
+    content: validateJokeContent(content),
+  };
+  const fields = { name, content };
+  if (Object.values(fieldErrors).some(Boolean)) {
+    return badRequest({ fieldErrors, fields });
   }
 
-  if (!name) errors.name = true;
-  if (!content) errors.content = true;
-
-  if (Object.keys(errors).length) {
-    return errors;
-  }
-
-  const joke = await db.joke.create({
-    data: {
-      name,
-      content,
-    },
-    select: { id: true },
-  });
-
+  const joke = await db.joke.create({ data: fields });
   return redirect(`/jokes/${joke.id}`);
 };
 
 export default function NewJokesRoute() {
-  const formErrors = useActionData<PostError>();
+  const actionData = useActionData<ActionData>();
   const transition = useTransition();
   return (
     <div>
@@ -63,18 +68,50 @@ export default function NewJokesRoute() {
         <fieldset disabled={transition.state === "submitting"}></fieldset>
         <div>
           <label htmlFor="name">
-            Name: <input type="text" name="name" autoComplete="autocomplete_off_absds42342" />
+            Name:{" "}
+            <input
+              type="text"
+              name="name"
+              autoComplete="autocomplete_off_absds42342"
+              defaultValue={actionData?.fields?.name}
+              aria-invalid={Boolean(actionData?.fieldErrors?.name) || undefined}
+              aria-describedby={
+                Boolean(actionData?.fieldErrors?.name)
+                  ? "name-error"
+                  : undefined
+              }
+            />
           </label>
-          {formErrors && formErrors.name ? (
-            <p style={{ color: "red" }}>Name is required</p>
+          {actionData?.fieldErrors?.name ? (
+            <p className="form-validation-error" role="alert" id="name-error">
+              {actionData?.fieldErrors?.name}
+            </p>
           ) : null}
         </div>
         <div>
           <label htmlFor="content">
-            Content: <textarea name="content" />
+            Content:{" "}
+            <textarea
+              name="content"
+              defaultValue={actionData?.fields?.content}
+              aria-invalid={
+                Boolean(actionData?.fieldErrors?.content) || undefined
+              }
+              aria-describedby={
+                Boolean(actionData?.fieldErrors?.content)
+                  ? "content-error"
+                  : undefined
+              }
+            />
           </label>
-          {formErrors && formErrors.content ? (
-            <p style={{ color: "red" }}>Content is required</p>
+          {actionData?.fieldErrors?.content ? (
+            <p
+              className="form-validation-error"
+              role="alert"
+              id="content-error"
+            >
+              {actionData?.fieldErrors?.content}
+            </p>
           ) : null}
         </div>
         <div>
