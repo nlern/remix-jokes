@@ -8,7 +8,7 @@ import {
 } from "remix";
 import stylesUrl from "~/styles/login.css";
 import { db } from "~/utils/db.server";
-import { login } from "~/utils/session.server";
+import { createUserSession, login } from "~/utils/session.server";
 
 export const links: LinksFunction = () => {
   return [{ rel: "stylesheet", href: stylesUrl }];
@@ -46,7 +46,7 @@ export const action: ActionFunction = async ({ request }) => {
   const loginType = formData.get("loginType");
   const username = formData.get("username");
   const password = formData.get("password");
-  const redirectTo = formData.get("redurectTo") || "/jokes";
+  const redirectTo = formData.get("redirectTo") || "/jokes";
 
   if (
     typeof loginType !== "string" ||
@@ -78,16 +78,12 @@ export const action: ActionFunction = async ({ request }) => {
       // if there's no user, return the fields and a formError
       // if there's a user, create their session and redirect to /jokes
       const user = await login({ username, password });
-      console.log({ user });
       if (!user) {
         return badRequest({
           formError: "Invalid credentials",
         });
       }
-      return badRequest({
-        fields,
-        formError: "Not implemented",
-      });
+      return await createUserSession(user.id, redirectTo);
 
     case "register":
       const userExists = await db.user.findFirst({
@@ -121,7 +117,7 @@ export default function Login() {
         <h1>Login</h1>
         <form
           method="post"
-          aria-aria-describedby={
+          aria-describedby={
             actionData?.formError ? "form-error-message" : undefined
           }
         >
