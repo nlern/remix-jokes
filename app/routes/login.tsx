@@ -78,6 +78,7 @@ export const action: ActionFunction = async ({ request }) => {
       // if there's no user, return the fields and a formError
       // if there's a user, create their session and redirect to /jokes
       const user = await login({ username, password });
+      console.log({ user });
       if (!user) {
         return badRequest({
           formError: "Invalid credentials",
