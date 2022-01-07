@@ -127,3 +127,11 @@ export default function NewJokesRoute() {
     </div>
   );
 }
+
+export function ErrorBoundary() {
+  return (
+    <div className="error-container">
+      Something went wrong. Sorry about that.
+    </div>
+  );
+}
