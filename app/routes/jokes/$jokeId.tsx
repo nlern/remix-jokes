@@ -1,4 +1,10 @@
-import { Link, LoaderFunction, useLoaderData, useParams } from "remix";
+import {
+  Link,
+  LoaderFunction,
+  useCatch,
+  useLoaderData,
+  useParams,
+} from "remix";
 import { db } from "~/utils/db.server";
 
 type LoaderData = {
@@ -12,7 +18,9 @@ export const loader: LoaderFunction = async ({ params }) => {
     where: { id: jokeId },
     select: { name: true, content: true },
   });
-  if (!joke) throw new Error("Joke not found");
+  if (!joke) {
+    throw new Response("What a Joke! Not found.", { status: 404 });
+  }
   return joke as LoaderData;
 };
 
@@ -26,6 +34,21 @@ export default function JokeRoute() {
       <Link to=".">{joke.name} Permalink</Link>
     </div>
   );
+}
+
+export function CatchBoundary() {
+  const caught = useCatch();
+  const params = useParams();
+
+  if (caught.status === 404) {
+    return (
+      <div className="error-container">
+        Huh? What the heck is {params.jokeId}
+      </div>
+    );
+  }
+
+  throw new Error(`Unhandled error: ${caught.status}`);
 }
 
 export function ErrorBoundary() {

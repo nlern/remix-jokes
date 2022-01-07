@@ -5,6 +5,7 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useCatch,
 } from "remix";
 import globalStylesUrl from "~/styles/global.css";
 import globalMediumStylesUrl from "~/styles/global-medium.css";
@@ -55,6 +56,18 @@ export default function App() {
   return (
     <Document>
       <Outlet />
+    </Document>
+  );
+}
+
+export function CatchBoundary() {
+  const caught = useCatch();
+  const errorMessage = `${caught.status} ${caught.statusText}`;
+  return (
+    <Document title={errorMessage}>
+      <div className="error-container">
+        <h1>{errorMessage}</h1>
+      </div>
     </Document>
   );
 }
