@@ -8,7 +8,7 @@ import {
 } from "remix";
 import stylesUrl from "~/styles/login.css";
 import { db } from "~/utils/db.server";
-import { createUserSession, login } from "~/utils/session.server";
+import { createUserSession, login, register } from "~/utils/session.server";
 
 export const links: LinksFunction = () => {
   return [{ rel: "stylesheet", href: stylesUrl }];
@@ -97,10 +97,14 @@ export const action: ActionFunction = async ({ request }) => {
       }
       // create the user
       // create their session and redirect to /jokes
-      return badRequest({
-        fields,
-        formError: "Not implemented",
-      });
+      const newUser = await register({ username, password });
+      if (!newUser) {
+        return badRequest({
+          fields,
+          formError: `Something went wrong trying to create a new user.`,
+        });
+      }
+      return createUserSession(newUser.id, redirectTo);
 
     default:
       return badRequest({ fields, formError: "Invalid login type" });
