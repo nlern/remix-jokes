@@ -1,25 +1,17 @@
 import type { LoaderFunction } from "remix";
 import { db } from "~/utils/db.server";
+import { getUserId } from "~/utils/session.server";
 
-function escapeCdata(s: string) {
-  return s.replaceAll("]]>", "]]]]><![CDATA[>");
-}
-
-function escapeHtml(s: string) {
-  return s
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
-export const loader: LoaderFunction = async ({ request }) => {
-  const jokes = await db.joke.findMany({
-    take: 100,
-    orderBy: { createdAt: "desc" },
-    include: { jokester: { select: { username: true } } },
-  });
+export let loader: LoaderFunction = async ({ request }) => {
+  let userId = await getUserId(request);
+  let jokes = userId
+    ? await db.joke.findMany({
+        take: 100,
+        orderBy: { createdAt: "desc" },
+        include: { jokester: { select: { username: true } } },
+        where: { jokesterId: userId },
+      })
+    : [];
 
   const host =
     request.headers.get("X-Forwarded-Host") ?? request.headers.get("host");
@@ -27,10 +19,10 @@ export const loader: LoaderFunction = async ({ request }) => {
     throw new Error("Could not determine domain URL.");
   }
   const protocol = host.includes("localhost") ? "http" : "https";
-  const domain = `${protocol}://${host}`;
+  let domain = `${protocol}://${host}`;
   const jokesUrl = `${domain}/jokes`;
 
-  const rssString = `
+  let rssString = `
     <rss xmlns:blogChannel="${jokesUrl}" version="2.0">
       <channel>
         <title>Remix Jokes</title>
@@ -43,14 +35,10 @@ export const loader: LoaderFunction = async ({ request }) => {
           .map((joke) =>
             `
             <item>
-              <title><![CDATA[${escapeCdata(joke.name)}]]></title>
-              <description><![CDATA[A funny joke called ${escapeHtml(
-                joke.name
-              )}]]></description>
-              <author><![CDATA[${escapeCdata(
-                joke.jokester.username
-              )}]]></author>
-              <pubDate>${joke.createdAt.toUTCString()}</pubDate>
+              <title>${joke.name}</title>
+              <description>A funny joke called ${joke.name}</description>
+              <author>${joke.jokester.username}</author>
+              <pubDate>${joke.createdAt}</pubDate>
               <link>${jokesUrl}/${joke.id}</link>
               <guid>${jokesUrl}/${joke.id}</guid>
             </item>
