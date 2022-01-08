@@ -9,6 +9,7 @@ import {
   useLoaderData,
   useParams,
 } from "remix";
+import JokeDisplay from "~/components/joke";
 import { db } from "~/utils/db.server";
 import { getUserId } from "~/utils/session.server";
 
@@ -76,21 +77,7 @@ export const action: ActionFunction = async ({ request, params }) => {
 export default function JokeRoute() {
   const { joke, isOwner } = useLoaderData<LoaderData>();
 
-  return (
-    <div>
-      <p>Here's your hilarious joke:</p>
-      <p>{joke.content}</p>
-      <Link to=".">{joke.name} Permalink</Link>
-      {isOwner && (
-        <form method="post">
-          <input type="hidden" name="_method" value="delete" />
-          <button type="submit" className="button">
-            Delete
-          </button>
-        </form>
-      )}
-    </div>
-  );
+  return <JokeDisplay joke={joke} isOwner={isOwner} />;
 }
 
 export function CatchBoundary() {
