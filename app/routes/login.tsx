@@ -3,6 +3,7 @@ import {
   json,
   Link,
   LinksFunction,
+  MetaFunction,
   useActionData,
   useSearchParams,
 } from "remix";
@@ -12,6 +13,13 @@ import { createUserSession, login, register } from "~/utils/session.server";
 
 export const links: LinksFunction = () => {
   return [{ rel: "stylesheet", href: stylesUrl }];
+};
+
+export const meta: MetaFunction = () => {
+  return {
+    title: "Remix | login",
+    description: "Login to submit your own jokes to remix-jokes!",
+  };
 };
 
 function validateUsername(username: string) {
